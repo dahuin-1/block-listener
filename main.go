@@ -23,7 +23,7 @@ const (
 	channelID  = "kiesnet-dev"
 	configPath = "/Users/dhkim/Projects/cc-ping-listener/config/network.yaml"
 	credPath   = "/Users/dhkim/Projects/kiesnet-chaincode-dev-network/crypto-config/peerOrganizations/kiesnet.dev/users"
-	user       = "dhkim"
+	userName   = "dhkim"
 )
 
 func main() {
@@ -51,7 +51,7 @@ func main() {
 }
 
 func getChannelProvider() (context.ChannelProvider, error) {
-	fabricUser, err := setFabricUser(user)
+	fabricUser, err := setFabricUser(userName)
 	if err != nil {
 		return nil, err
 	}
