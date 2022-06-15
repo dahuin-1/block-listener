@@ -7,7 +7,6 @@ import (
 	mspctx "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
-
 	"log"
 	"os"
 	"path/filepath"
@@ -28,10 +27,10 @@ type User struct {
 }
 
 const (
-	channelID  = "kiesnet-dev"
-	configPath = "/Users/dhkim/Projects/cc-ping-listener/config/network.yaml"
-	credPath   = "/Users/dhkim/Projects/kiesnet-chaincode-dev-network/crypto-config/peerOrganizations/kiesnet.dev/users"
-	//userName   = "dhkim"
+	chainCodeID = "ping"
+	channelID   = "kiesnet-dev"
+	configPath  = "/Users/dhkim/Projects/cc-ping-listener/config/network.yaml"
+	credPath    = "/Users/dhkim/Projects/kiesnet-chaincode-dev-network/crypto-config/peerOrganizations/kiesnet.dev/users"
 )
 
 func getChannelProvider() (context.ChannelProvider, error) {
@@ -94,22 +93,20 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to return Client instance, err: %s", err)
 	}
-	registration, eventChannel, err := client.RegisterBlockEvent()
+	registration, eventChannel, err := client.RegisterChaincodeEvent(chainCodeID, "fruit/soldout|fruit/restock")
 	if err != nil {
-		log.Fatalf("failed to register Filtered Block Event, err: %s", err)
+		log.Fatalf("failed to register Block Event, err: %s", err)
 	}
 	defer client.Unregister(registration)
-	var blockNum uint64
 	for {
 		log.Printf("🎹👂🎹👂🎹👂🎹👂🎹👂🏻listen👂🏻🎹👂🎹👂🎹👂🎹👂🎹")
 		select {
 		case e := <-eventChannel:
-			blockNum = e.Block.Header.Number
 			log.Println("############################################################")
 			log.Println("###################### Received event ######################")
-			log.Printf("################### BlockNum : %d ##########################", blockNum)
-			log.Printf("#################### Block info ######################## %v ", e.Block)
-			log.Println("#########################################################")
+			log.Printf("################### BlockNum : %d ##########################", e.BlockNumber)
+			log.Printf("#################### Block event : %v ########### ", e.EventName)
+			log.Println("#############################################################")
 		}
 	}
 }
