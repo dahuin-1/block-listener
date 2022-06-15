@@ -8,16 +8,22 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
-	"time"
+	// "time"
 )
 
-type FabricUser struct {
-	Cert       []byte
-	Name       string
+/*
+1. 네트워크 컨피그 설정
+2. sdk 객체
+3. channel client
+4. block listening
+*/
+
+type User struct {
+	Cert []byte
+	//Name       string
 	PrivateKey []byte
 }
 
@@ -25,47 +31,11 @@ const (
 	channelID  = "kiesnet-dev"
 	configPath = "/Users/dhkim/Projects/cc-ping-listener/config/network.yaml"
 	credPath   = "/Users/dhkim/Projects/kiesnet-chaincode-dev-network/crypto-config/peerOrganizations/kiesnet.dev/users"
-	userName   = "dhkim"
+	//userName   = "dhkim"
 )
 
-func main() {
-	channelProvider, err := getChannelProvider()
-	if err != nil {
-		log.Fatalf("failed to get Channel Provider, err: %s", err)
-	}
-	client, err := event.New(channelProvider, event.WithBlockEvents())
-	if err != nil {
-		log.Fatalf("failed to return Client instance, err: %s", err)
-	}
-	registration, eventChannel, err := client.RegisterBlockEvent()
-	if err != nil {
-		log.Fatalf("failed to register Filtered Block Event, err: %s", err)
-	}
-	defer client.Unregister(registration)
-	var blockNum uint64
-	for {
-		log.Printf("🎹👂🎹👂🎹👂🎹👂🎹👂🏻listen👂🏻🎹👂🎹👂🎹👂🎹👂🎹")
-		select {
-		case e := <-eventChannel:
-			blockNum = e.Block.Header.Number
-			log.Println("#########################################################")
-			log.Println("###################### Received event ######################")
-			log.Printf("################### BlockNum : %d ######################", blockNum)
-			log.Printf("#################### Block info: %v ########################", e.Block)
-			log.Println("#########################################################")
-		case <-time.After(time.Second * 10):
-			log.Println("#########################################################################")
-			log.Printf("#################### Event did not happen this time #####################")
-			if blockNum != 0 {
-				log.Printf("################### Block number until now : %d #########################", blockNum)
-			}
-			log.Println("#########################################################################")
-		}
-	}
-}
-
 func getChannelProvider() (context.ChannelProvider, error) {
-	fabricUser, err := setFabricUser(userName)
+	fabricUser, err := setUser()
 	if err != nil {
 		return nil, err
 	}
@@ -91,11 +61,11 @@ func getChannelProvider() (context.ChannelProvider, error) {
 	return channelProvider, nil
 }
 
-func setFabricUser(name string) (*FabricUser, error) {
-	mspPath := filepath.Join(credPath, name, "msp")
+func setUser() (*User, error) {
+	mspPath := filepath.Join(credPath, "dhkim", "msp")
 	certPath := filepath.Join(mspPath, "signcerts", "cert.pem")
 
-	cert, err := ioutil.ReadFile(certPath)
+	cert, err := os.ReadFile(certPath)
 	if err != nil {
 		return nil, err
 	}
@@ -107,10 +77,39 @@ func setFabricUser(name string) (*FabricUser, error) {
 	}
 
 	keyPath := filepath.Join(keyStore, keys[0].Name())
-	key, err := ioutil.ReadFile(keyPath)
+	key, err := os.ReadFile(keyPath)
 	if err != nil {
 		return nil, err
 	}
 
-	return &FabricUser{Name: name, Cert: cert, PrivateKey: key}, nil
+	return &User{Cert: cert, PrivateKey: key}, nil
+}
+
+func main() {
+	channelProvider, err := getChannelProvider()
+	if err != nil {
+		log.Fatalf("failed to get Channel Provider, err: %s", err)
+	}
+	client, err := event.New(channelProvider, event.WithBlockEvents())
+	if err != nil {
+		log.Fatalf("failed to return Client instance, err: %s", err)
+	}
+	registration, eventChannel, err := client.RegisterBlockEvent()
+	if err != nil {
+		log.Fatalf("failed to register Filtered Block Event, err: %s", err)
+	}
+	defer client.Unregister(registration)
+	var blockNum uint64
+	for {
+		log.Printf("🎹👂🎹👂🎹👂🎹👂🎹👂🏻listen👂🏻🎹👂🎹👂🎹👂🎹👂🎹")
+		select {
+		case e := <-eventChannel:
+			blockNum = e.Block.Header.Number
+			log.Println("############################################################")
+			log.Println("###################### Received event ######################")
+			log.Printf("################### BlockNum : %d ##########################", blockNum)
+			log.Printf("#################### Block info ######################## %v ", e.Block)
+			log.Println("#########################################################")
+		}
+	}
 }

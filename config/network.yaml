@@ -1,10 +1,7 @@
 client:
   organization: dev
   logging:
-    level: debug
-  # credentialStore:
-  #   cryptoStore:
-  #     path: do-not-use
+    level: info
 channels:
   _default:
     policies:
@@ -31,13 +28,11 @@ organizations:
     peers:
       - test-peer
     users:
-      seongjeong:
+      dhkim:
         cert:
           path: "/Users/dhkim/Projects/kiesnet-chaincode-dev-network/crypto-config/peerOrganizations/kiesnet.dev/users/dhkim/msp/signcerts/cert.pem"
-          # pem:
         key:
           path: "/Users/dhkim/Projects/kiesnet-chaincode-dev-network/crypto-config/peerOrganizations/kiesnet.dev/users/dhkim/msp/keystore/ecd808d04162d2f53441067459e98c5377adaecb1c61a2e4f878d15c31858a00_sk"
-          # pem:
 orderers:
   test-orderer:
     url: localhost:7050
@@ -48,9 +43,6 @@ orderers:
       keep-alive-permit: false
       fail-fast: false
       allow-insecure: true
-      # tlsCACerts:
-      #   # path:
-      #   pem: |
 peers:
   test-peer:
     url: localhost:7051
