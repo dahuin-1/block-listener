@@ -1,6 +1,9 @@
 package main
 
 import (
+	"github.com/golang/protobuf/proto"
+	"github.com/hyperledger/fabric-protos-go/common"
+	"github.com/hyperledger/fabric-protos-go/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/event"
 	mspclient "github.com/hyperledger/fabric-sdk-go/pkg/client/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
@@ -13,16 +16,14 @@ import (
 )
 
 type User struct {
-	Cert []byte
-	//Name       string
+	Cert       []byte
 	PrivateKey []byte
 }
 
 const (
-	chainCodeID = "ping"
-	channelID   = "kiesnet-dev"
-	configPath  = "/Users/dhkim/Projects/cc-ping-listener/config/network.yaml"
-	credPath    = "/Users/dhkim/Projects/kiesnet-chaincode-dev-network/crypto-config/peerOrganizations/kiesnet.dev/users"
+	channelID  = "kiesnet-dev"
+	configPath = "/Users/dhkim/Projects/cc-ping-listener/config/network.yaml"
+	credPath   = "/Users/dhkim/Projects/kiesnet-chaincode-dev-network/crypto-config/peerOrganizations/kiesnet.dev/users"
 )
 
 func getChannelProvider() (context.ChannelProvider, error) {
@@ -33,7 +34,7 @@ func getChannelProvider() (context.ChannelProvider, error) {
 
 	networkConfig := config.FromFile(configPath) //네트워크컨피그설정
 
-	sdk, err := fabsdk.New(networkConfig) //sdk객체를 얻음 //sdk, err := fabsdk.New(config.FromFile(configPath))
+	sdk, err := fabsdk.New(networkConfig) //sdk객체를 얻음
 	if err != nil {
 		return nil, err
 	}
@@ -55,7 +56,6 @@ func getChannelProvider() (context.ChannelProvider, error) {
 func setUser() (*User, error) {
 	mspPath := filepath.Join(credPath, "dhkim", "msp")
 	certPath := filepath.Join(mspPath, "signcerts", "cert.pem")
-
 	cert, err := os.ReadFile(certPath)
 	if err != nil {
 		return nil, err
@@ -74,6 +74,15 @@ func setUser() (*User, error) {
 	}
 
 	return &User{Cert: cert, PrivateKey: key}, nil
+}
+
+func getEnvelopeFromBlock(data []byte) (*common.Envelope, error) {
+	var err error
+	env := &common.Envelope{}
+	if err = proto.Unmarshal(data, env); err != nil {
+		return nil, err
+	}
+	return env, nil
 }
 
 func main() {
@@ -97,7 +106,64 @@ func main() {
 			log.Println("############################################################")
 			log.Println("###################### Received event ######################")
 			log.Printf("################### BlockNum : %d ##########################", e.Block.Header.Number)
-			log.Printf("#################### Block event : %v ########### ", e.Block.Data)
+			//log.Printf("#################### Block event : %v ########### ", e.Block.Data)
+			blockData := e.Block.Data.Data
+			//First Get the Envelope from the BlockData
+			envelope, err := getEnvelopeFromBlock(blockData[0])
+			if err != nil {
+				log.Fatalf("unmarshaling Envelope error: %s", err)
+			}
+			//Retrieve the Payload from the Envelope
+			payload := &common.Payload{}
+			err = proto.Unmarshal(envelope.Payload, payload)
+			if err != nil {
+				log.Fatalf("unmarshaling Payload error: %s", err)
+			}
+			//Read the Transaction from the Payload Data
+			transaction := &peer.Transaction{}
+			err = proto.Unmarshal(payload.Data, transaction)
+			if err != nil {
+				log.Fatalf("unmarshaling Payload Transaction error: %s", err)
+			}
+			// Payload field is marshalled object of ChaincodeActionPayload
+			chaincodeActionPayload := &peer.ChaincodeActionPayload{}
+			err = proto.Unmarshal(transaction.Actions[0].Payload, chaincodeActionPayload)
+			if err != nil {
+				log.Fatalf("unmarshaling Chaincode Action Payload error: %s", err)
+			}
+			chaincodeEndorsedActionPayload := &peer.ChaincodeEndorsedAction{}
+			//err = proto.Unmarshal(chaincodeActionPayload.ChaincodeProposalPayload, chaincodeEndorsedActionPayload)
+			err = proto.Unmarshal(chaincodeActionPayload.Action, chaincodeEndorsedActionPayload)
+			log.Println(chaincodeActionPayload.ChaincodeProposalPayload)
+			if err != nil {
+				log.Fatalf("unmarshaling chaincode Endorsed Action Payload error: %s", err)
+			}
+
+			proposalResponsePayload := &peer.ProposalResponsePayload{}
+			err = proto.Unmarshal(chaincodeEndorsedActionPayload.ProposalResponsePayload, proposalResponsePayload)
+			if err != nil {
+				log.Fatalf("unmarshaling Chaincode Action Payload error: %s", err)
+			}
+
+			chaincodeAction := &peer.ChaincodeAction{}
+			err = proto.Unmarshal(proposalResponsePayload.Extension, chaincodeAction)
+			log.Println("_____________________")
+			//log.Println(proposalResponsePayload.String()) //fruit/buy sell 등등 나옴
+			log.Println(proposalResponsePayload.Extension)
+			log.Println(proposalResponsePayload.String())
+			log.Println(proposalResponsePayload.ProposalHash)
+			log.Println("~~~~~~~~~~~~~@@@@@~~~~")
+			log.Println(chaincodeAction.Events)
+			if err != nil {
+				log.Fatalf("unmarshaling Chaincode Action Payload error: %s", err)
+			}
+
+			chaincodeEvent := &peer.ChaincodeAction{}
+			err = proto.Unmarshal(chaincodeAction.Events, chaincodeEvent)
+			if err != nil {
+				log.Fatalf("unmarshaling Chaincode Action Payload error: %s", err)
+			}
+			log.Printf("#################### Block event : %v ########### ", chaincodeEvent.GetEvents())
 			log.Println("#############################################################")
 		}
 	}
