@@ -52,11 +52,7 @@ func getEventByParsing(ChaincodeProposalPayload []byte) string {
 	if err != nil {
 		log.Fatalf("unmarshaling Chaincode Action Payload error: %s", err)
 	}
-	chaincodeResults, err := unmarshalers.GetChaincodeResults(chaincodeAction.Results)
-	if err != nil {
-		log.Fatalf("unmarshaling Chaincode Action Payload error: %s", err)
-	}
-	eventName := parseEvent(chaincodeResults.String())
+	eventName := parseEvent(chaincodeAction.String())
 	return eventName
 }
 
@@ -128,6 +124,9 @@ func main() {
 			if err != nil {
 				log.Fatalf("unmarshaling chaincodeActionPayload.Action ProposalResponsePayload to proposalResponsePayload error: %s", err)
 			}
+			//log.Println("~~~~~~~~~")
+			//log.Println(proposalResponsePayload.String())
+			//log.Println("~~~~~~~~~")
 			chaincodeAction, err := unmarshalers.GetChaincodeAction(proposalResponsePayload.Extension)
 			if err != nil {
 				log.Fatalf("unmarshaling proposalResponsePayload Extension to chaincodeAction error: %s", err)
@@ -143,11 +142,8 @@ func main() {
 				eventName = getEventByParsing(chaincodeActionPayload.ChaincodeProposalPayload)
 			}
 			log.Printf("#################### Block event : %v ########### ", eventName)
+			log.Printf("#################### Block info : %v ########### ", chaincodeAction.String())
 			log.Println("#############################################################")
-			/////////////////////
-			//log.Println(chaincodeEndorsedActionPayload.String())
-			//log.Println(proposalResponsePayload.String()) //fruit/buy sell 등등 나옴
-			//log.Println(chaincodeEvent.String())
 		}
 	}
 }
