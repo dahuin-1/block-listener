@@ -1,8 +1,7 @@
 package main
 
 import (
-	"github.com/golang/protobuf/proto"
-	"github.com/hyperledger/fabric-protos-go/peer"
+	"github.com/cc-ping-listener/unmarshalers"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/event"
 	mspclient "github.com/hyperledger/fabric-sdk-go/pkg/client/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
@@ -48,6 +47,25 @@ func getChannelProvider() (context.ChannelProvider, error) {
 	return channelProvider, nil
 }
 
+func getEventByParsing(ChaincodeProposalPayload []byte) string {
+	chaincodeAction, err := unmarshalers.GetChaincodeAction(ChaincodeProposalPayload)
+	if err != nil {
+		log.Fatalf("unmarshaling Chaincode Action Payload error: %s", err)
+	}
+	chaincodeResults, err := unmarshalers.GetChaincodeResults(chaincodeAction.Results)
+	if err != nil {
+		log.Fatalf("unmarshaling Chaincode Action Payload error: %s", err)
+	}
+	eventName := parseEvent(chaincodeResults.String())
+	return eventName
+}
+
+func parseEvent(str string) string {
+	firstIndex := strings.Index(str, "fruit")
+	lastIndex := strings.LastIndex(str, `\n`)
+	return str[firstIndex:lastIndex]
+}
+
 func setUser() (*User, error) {
 	mspPath := filepath.Join(credPath, "dhkim", "msp")
 	certPath := filepath.Join(mspPath, "signcerts", "cert.pem")
@@ -67,24 +85,6 @@ func setUser() (*User, error) {
 	}
 	return &User{Cert: cert, PrivateKey: key}, nil
 }
-
-//func getEnvelopeFromBlock(data []byte) (*common.Envelope, error) {
-//	env := &common.Envelope{}
-//	err := proto.Unmarshal(data, env)
-//	if err != nil {
-//		return nil, err
-//	}
-//	return env, nil
-//}
-//
-//func getPayloadFromEnv(data []byte) (*common.Payload, error) {
-//	payload := &common.Payload{}
-//	err := proto.Unmarshal(data, payload)
-//	if err != nil {
-//		return nil, err
-//	}
-//	return payload, nil
-//}
 
 func main() {
 	channelProvider, err := getChannelProvider()
@@ -108,45 +108,33 @@ func main() {
 			log.Println("###################### Received event ######################")
 			log.Printf("################### BlockNum : %d ##########################", e.Block.Header.Number)
 			blockData := e.Block.Data.Data
-			//First Get the Envelope from the BlockData
-			envelope, err := GetEnvelopeFromBlock(blockData[0])
+			envelope, err := unmarshalers.GetEnvelopeFromBlock(blockData[0])
 			if err != nil {
 				log.Fatalf("unmarshaling Envelope error: %s", err)
 			}
-			//Retrieve the Payload from the Envelope
-			//payload := &common.Payload{}
-			//err = proto.Unmarshal(envelope.Payload, payload)
-			payload, err := getPayloadFromEnv(envelope.Payload)
+			payload, err := unmarshalers.GetPayloadFromEnv(envelope.Payload)
 			if err != nil {
 				log.Fatalf("unmarshaling envelopePayload to payload error: %s", err)
 			}
-			//Read the Transaction from the Payload Data
-			transaction := &peer.Transaction{}
-			err = proto.Unmarshal(payload.Data, transaction)
+			transaction, err := unmarshalers.GetTransaction(payload.Data)
 			if err != nil {
 				log.Fatalf("unmarshaling payloadData to transaction error: %s", err)
 			}
-			// Payload field is marshalled object of ChaincodeActionPayload
-			chaincodeActionPayload := &peer.ChaincodeActionPayload{}
-			err = proto.Unmarshal(transaction.Actions[0].Payload, chaincodeActionPayload)
+			chaincodeActionPayload, err := unmarshalers.GetChaincodeActionPayload(transaction.Actions[0].Payload)
 			if err != nil {
 				log.Fatalf("unmarshaling transactionActionPayload to chaincodeActionPayload error: %s", err)
 			}
-			// ProposalResponsePayload field is marshalled object of
-			proposalResponsePayload := &peer.ProposalResponsePayload{}
-			err = proto.Unmarshal(chaincodeActionPayload.Action.ProposalResponsePayload, proposalResponsePayload)
+			proposalResponsePayload, err := unmarshalers.GetProposalResponsePayload(chaincodeActionPayload.Action.ProposalResponsePayload)
 			if err != nil {
-				log.Fatalf("unmarshaling chaincodeActionPayload Action ProposalResponsePayload to proposalResponsePayload error: %s", err)
+				log.Fatalf("unmarshaling chaincodeActionPayload.Action ProposalResponsePayload to proposalResponsePayload error: %s", err)
 			}
-			chaincodeAction := &peer.ChaincodeAction{}
-			err = proto.Unmarshal(proposalResponsePayload.Extension, chaincodeAction)
+			chaincodeAction, err := unmarshalers.GetChaincodeAction(proposalResponsePayload.Extension)
 			if err != nil {
 				log.Fatalf("unmarshaling proposalResponsePayload Extension to chaincodeAction error: %s", err)
 			}
-			chaincodeEvent := &peer.ChaincodeEvent{}
-			err = proto.Unmarshal(chaincodeAction.Events, chaincodeEvent)
+			chaincodeEvent, err := unmarshalers.GetChaincodeEvent(chaincodeAction.Events)
 			if err != nil {
-				log.Fatalf("unmarshaling chaincodeAction Events to chaincodeEvent error: %s", err)
+				log.Fatalf("unmarshaling chaincodeAction.Events to chaincodeEvent error: %s", err)
 			}
 			var eventName string
 			if chaincodeEvent.EventName != "" {
@@ -162,25 +150,4 @@ func main() {
 			//log.Println(chaincodeEvent.String())
 		}
 	}
-}
-
-func getEventByParsing(ChaincodeProposalPayload []byte) string {
-	chaincodeAction := &peer.ChaincodeAction{}
-	err := proto.Unmarshal(ChaincodeProposalPayload, chaincodeAction)
-	if err != nil {
-		log.Fatalf("unmarshaling Chaincode Action Payload error: %s", err)
-	}
-	chaincodeResults := &peer.ChaincodeAction{}
-	err = proto.Unmarshal(chaincodeAction.Results, chaincodeResults)
-	if err != nil {
-		log.Fatalf("unmarshaling Chaincode Action Payload error: %s", err)
-	}
-	eventName := parseEvent(chaincodeResults.String())
-	return eventName
-}
-
-func parseEvent(str string) string {
-	firstIndex := strings.Index(str, "fruit")
-	lastIndex := strings.LastIndex(str, `\n`)
-	return str[firstIndex:lastIndex]
 }
