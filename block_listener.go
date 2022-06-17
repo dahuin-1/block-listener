@@ -33,8 +33,7 @@ func getChannelProvider() (context.ChannelProvider, error) {
 	}
 
 	networkConfig := config.FromFile(configPath) //네트워크컨피그설정
-
-	sdk, err := fabsdk.New(networkConfig) //sdk객체를 얻음
+	sdk, err := fabsdk.New(networkConfig)        //sdk객체를 얻음
 	if err != nil {
 		return nil, err
 	}
@@ -131,39 +130,23 @@ func main() {
 			if err != nil {
 				log.Fatalf("unmarshaling Chaincode Action Payload error: %s", err)
 			}
-			chaincodeEndorsedActionPayload := &peer.ChaincodeEndorsedAction{}
-			//err = proto.Unmarshal(chaincodeActionPayload.ChaincodeProposalPayload, chaincodeEndorsedActionPayload)
-			err = proto.Unmarshal(chaincodeActionPayload.Action, chaincodeEndorsedActionPayload)
-			log.Println(chaincodeActionPayload.ChaincodeProposalPayload)
+			chaincodeEndorsedActionPayload := &peer.ProposalResponsePayload{}
+			err = proto.Unmarshal(chaincodeActionPayload.Action.ProposalResponsePayload, chaincodeEndorsedActionPayload)
 			if err != nil {
 				log.Fatalf("unmarshaling chaincode Endorsed Action Payload error: %s", err)
 			}
-
-			proposalResponsePayload := &peer.ProposalResponsePayload{}
-			err = proto.Unmarshal(chaincodeEndorsedActionPayload.ProposalResponsePayload, proposalResponsePayload)
+			proposalResponsePayload := &peer.ChaincodeAction{}
+			err = proto.Unmarshal(chaincodeEndorsedActionPayload.Extension, proposalResponsePayload)
 			if err != nil {
 				log.Fatalf("unmarshaling Chaincode Action Payload error: %s", err)
 			}
-
-			chaincodeAction := &peer.ChaincodeAction{}
-			err = proto.Unmarshal(proposalResponsePayload.Extension, chaincodeAction)
-			log.Println("_____________________")
+			chaincodeEvent := &peer.ChaincodeEvent{}
+			err = proto.Unmarshal(proposalResponsePayload.Events, chaincodeEvent)
 			//log.Println(proposalResponsePayload.String()) //fruit/buy sell 등등 나옴
-			log.Println(proposalResponsePayload.Extension)
-			log.Println(proposalResponsePayload.String())
-			log.Println(proposalResponsePayload.ProposalHash)
-			log.Println("~~~~~~~~~~~~~@@@@@~~~~")
-			log.Println(chaincodeAction.Events)
 			if err != nil {
 				log.Fatalf("unmarshaling Chaincode Action Payload error: %s", err)
 			}
-
-			chaincodeEvent := &peer.ChaincodeAction{}
-			err = proto.Unmarshal(chaincodeAction.Events, chaincodeEvent)
-			if err != nil {
-				log.Fatalf("unmarshaling Chaincode Action Payload error: %s", err)
-			}
-			log.Printf("#################### Block event : %v ########### ", chaincodeEvent.GetEvents())
+			log.Printf("#################### Block event : %v ########### ", chaincodeEvent.EventName)
 			log.Println("#############################################################")
 		}
 	}
