@@ -11,7 +11,6 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"strings"
 )
 
 type User struct {
@@ -20,9 +19,10 @@ type User struct {
 }
 
 const (
-	channelID  = "kiesnet-dev"
-	configPath = "/Users/dhkim/Projects/cc-ping-listener/config/network.yaml"
-	credPath   = "/Users/dhkim/Projects/kiesnet-chaincode-dev-network/crypto-config/peerOrganizations/kiesnet.dev/users"
+	chainCodeID = "ping"
+	channelID   = "kiesnet-dev"
+	configPath  = "/Users/dhkim/Projects/cc-ping-listener/config/network.yaml"
+	credPath    = "/Users/dhkim/Projects/kiesnet-chaincode-dev-network/crypto-config/peerOrganizations/kiesnet.dev/users"
 )
 
 func getChannelProvider() (context.ChannelProvider, error) {
@@ -45,21 +45,6 @@ func getChannelProvider() (context.ChannelProvider, error) {
 	}
 	channelProvider := sdk.ChannelContext(channelID, fabsdk.WithIdentity(signingIdentity))
 	return channelProvider, nil
-}
-
-func getFunctionName(ChaincodeProposalPayload []byte) string {
-	chaincodeAction, err := unmarshalers.GetChaincodeAction(ChaincodeProposalPayload)
-	if err != nil {
-		log.Fatalf("unmarshaling Chaincode Action Payload error: %s", err)
-	}
-	funcName := parse(chaincodeAction.String())
-	return funcName
-}
-
-func parse(str string) string {
-	firstIndex := strings.Index(str, "fruit")
-	lastIndex := strings.LastIndex(str, `\n`)
-	return str[firstIndex:lastIndex]
 }
 
 func setUser() (*User, error) {
@@ -92,6 +77,7 @@ func main() {
 		log.Fatalf("failed to return Client instance, err: %s", err)
 	}
 	registration, eventChannel, err := client.RegisterBlockEvent()
+	//registration, eventChannel, err := client.RegisterChaincodeEvent(chainCodeID, "fruit/soldout|fruit/restock")
 	if err != nil {
 		log.Fatalf("failed to register Block Event, err: %s", err)
 	}
@@ -100,9 +86,6 @@ func main() {
 		log.Printf("🎹👂🎹👂🎹👂🎹👂🎹👂🏻listen👂🏻🎹👂🎹👂🎹👂🎹👂🎹")
 		select {
 		case e := <-eventChannel:
-			log.Println("############################################################")
-			log.Println("###################### Received event ######################")
-			log.Printf("################### BlockNum : %d ##########################", e.Block.Header.Number)
 			blockData := e.Block.Data.Data
 			envelope, err := unmarshalers.GetEnvelopeFromBlock(blockData[0])
 			if err != nil {
@@ -124,9 +107,6 @@ func main() {
 			if err != nil {
 				log.Fatalf("unmarshaling chaincodeActionPayload.Action ProposalResponsePayload to proposalResponsePayload error: %s", err)
 			}
-			//log.Println("~~~~~~~~~")
-			//log.Println(proposalResponsePayload.String())
-			//log.Println("~~~~~~~~~")
 			chaincodeAction, err := unmarshalers.GetChaincodeAction(proposalResponsePayload.Extension)
 			if err != nil {
 				log.Fatalf("unmarshaling proposalResponsePayload Extension to chaincodeAction error: %s", err)
@@ -136,12 +116,13 @@ func main() {
 				log.Fatalf("unmarshaling chaincodeAction.Events to chaincodeEvent error: %s", err)
 			}
 			if chaincodeEvent.EventName != "" {
+				log.Println("############################################################")
+				log.Println("###################### Received event ######################")
+				log.Printf("################### BlockNum : %d ##########################", e.Block.Header.Number)
 				log.Printf("#################### Block event : %v ########### ", chaincodeEvent.EventName)
-			} else {
-				log.Printf("#################### Function name : %v ########### ", getFunctionName(chaincodeActionPayload.ChaincodeProposalPayload))
+				log.Printf("#################### Block info : %v ########### ", chaincodeAction.String())
+				log.Println("#############################################################")
 			}
-			log.Printf("#################### Block info : %v ########### ", chaincodeAction.String())
-			log.Println("#############################################################")
 		}
 	}
 }
