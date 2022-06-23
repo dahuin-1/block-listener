@@ -30,8 +30,8 @@ func getChannelProvider() (context.ChannelProvider, error) {
 	if err != nil {
 		return nil, err
 	}
-	networkConfig := config.FromFile(configPath) //네트워크컨피그설정
-	sdk, err := fabsdk.New(networkConfig)        //sdk객체를 얻음
+	networkConfig := config.FromFile(configPath)
+	sdk, err := fabsdk.New(networkConfig)
 	if err != nil {
 		return nil, err
 	}
