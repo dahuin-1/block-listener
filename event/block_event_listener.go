@@ -9,90 +9,31 @@ import (
 )
 
 var startBlockNum uint64
-var endBlockNum uint64
-
-//type User struct {
-//	Cert       []byte
-//	PrivateKey []byte
-//}
-//const (
-//	channelID  = "kiesnet-dev"
-//	configPath = "/Users/dhkim/Projects/cc-ping-listener/config/network.yaml"
-//	credPath   = "/Users/dhkim/Projects/kiesnet-chaincode-dev-network/crypto-config/peerOrganizations/kiesnet.dev/users"
-//)
-//
-//
-//func getChannelProvider() (context.ChannelProvider, error) {
-//	fabricUser, err := setUser()
-//	if err != nil {
-//		return nil, err
-//	}
-//	networkConfig := config.FromFile(configPath)
-//	sdk, err := fabsdk.New(networkConfig)
-//	if err != nil {
-//		return nil, err
-//	}
-//	client, err := mspclient.New(sdk.Context()) //sdk 객체를 이용해서 channel client 생성
-//	if err != nil {
-//		return nil, err
-//	}
-//	signingIdentity, err := client.CreateSigningIdentity(mspctx.WithCert(fabricUser.Cert), mspctx.WithPrivateKey(fabricUser.PrivateKey))
-//	if err != nil {
-//		return nil, err
-//	}
-//	channelProvider := sdk.ChannelContext(channelID, fabsdk.WithIdentity(signingIdentity))
-//	return channelProvider, nil
-//}
-//
-//func setUser() (*User, error) {
-//	mspPath := filepath.Join(credPath, "dhkim", "msp")
-//	certPath := filepath.Join(mspPath, "signcerts", "cert.pem")
-//	cert, err := os.ReadFile(certPath)
-//	if err != nil {
-//		return nil, err
-//	}
-//	keyStore := filepath.Join(mspPath, "keystore")
-//	keys, err := os.ReadDir(keyStore)
-//	if err != nil {
-//		return nil, err
-//	}
-//	keyPath := filepath.Join(keyStore, keys[0].Name())
-//	key, err := os.ReadFile(keyPath)
-//	if err != nil {
-//		return nil, err
-//	}
-//	return &User{Cert: cert, PrivateKey: key}, nil
-//}
-
-func getStartBlock(startBlock uint64) error {
-	log.Printf("hello world, %d", startBlock)
-	return nil
-}
 
 func init() {
 	flag.Uint64Var(&startBlockNum, "startBlock", 0, "set start block number if needed")
-	flag.Uint64Var(&endBlockNum, "endBlock", 0, "set end block number if needed")
 	flag.Parse()
 }
 
 func main() {
-	err := getStartBlock(startBlockNum)
-	if err != nil {
-		log.Fatalf("err")
-	}
 	channelProvider, err := env.GetChannelProvider()
 	if err != nil {
 		log.Fatalf("failed to get Channel Provider, err: %s", err)
 	}
-	client, err := event.New(channelProvider, event.WithBlockEvents())
+	var eventClient *event.Client
+	if startBlockNum == 0 {
+		eventClient, err = event.New(channelProvider, event.WithBlockEvents())
+	} else {
+		eventClient, err = event.New(channelProvider, event.WithBlockEvents(), event.WithSeekType("from"), event.WithBlockNum(startBlockNum))
+	}
 	if err != nil {
 		log.Fatalf("failed to return Client instance, err: %s", err)
 	}
-	registration, eventChannel, err := client.RegisterBlockEvent()
+	registration, eventChannel, err := eventClient.RegisterBlockEvent()
 	if err != nil {
 		log.Fatalf("failed to register Block Event, err: %s", err)
 	}
-	defer client.Unregister(registration)
+	defer eventClient.Unregister(registration)
 	for {
 		log.Printf("🎹👂🎹👂🎹👂🎹👂🎹👂🏻listen👂🏻🎹👂🎹👂🎹👂🎹👂🎹")
 		e := <-eventChannel

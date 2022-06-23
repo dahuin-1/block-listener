@@ -9,9 +9,11 @@ import (
 	"time"
 )
 
-var startBlockNum uint64
-var endBlockNum uint64
-var isUpdated bool
+var (
+	startBlockNum uint64
+	endBlockNum   uint64
+	isUpdated     bool
+)
 
 func init() {
 	flag.Uint64Var(&startBlockNum, "startBlock", 0, "set start block number if needed")
@@ -53,12 +55,12 @@ func main() {
 		startBlockNum = 1
 	}
 	ticker := time.NewTicker(10 * time.Second)
-	defer func() {
-		ticker.Stop()
-	}()
 	for range ticker.C {
 		synchronize(ledgerClient, currentBlockHeight)
 	}
+	defer func() {
+		ticker.Stop()
+	}()
 }
 
 func synchronize(ledgerClient *ledger.Client, currentBlockHeight uint64) {
@@ -72,8 +74,12 @@ func synchronize(ledgerClient *ledger.Client, currentBlockHeight uint64) {
 		endBlockNum = newBlockHeight - 1
 		isUpdated = false
 	}
+
+	log.Printf("start block number: %d, end block number: %d", startBlockNum, endBlockNum)
+	//i := startBlockNum
 	if !isUpdated {
 		for i := startBlockNum; i <= endBlockNum; i++ {
+			//for i < blockchainInfo.BCI.Height {
 			log.Printf("=================================== Sync on block number: %d ===================================", i)
 			block, err := ledgerClient.QueryBlock(i)
 			if err != nil {
@@ -81,6 +87,7 @@ func synchronize(ledgerClient *ledger.Client, currentBlockHeight uint64) {
 			}
 			if block == nil {
 				log.Printf("failed to retrieve the block from blocknumber %d. The block is nil: ", i)
+				panic(err)
 			}
 			blockData := block.Data.Data
 			envelope, err := unmarshalers.GetEnvelopeFromBlock(blockData[0])
@@ -117,6 +124,7 @@ func synchronize(ledgerClient *ledger.Client, currentBlockHeight uint64) {
 				log.Printf("#################### Block event : %v ########### ", chaincodeEvent.EventName)
 				log.Printf("#################### Block info - block %v ########### ", chaincodeAction.String())
 			}
+			i++
 		}
 		isUpdated = true
 	}
