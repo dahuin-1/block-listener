@@ -2,17 +2,18 @@ package main
 
 import (
 	"flag"
+	"log"
+	"time"
+
 	"github.com/cc-ping-listener/env"
 	"github.com/cc-ping-listener/unmarshalers"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/ledger"
-	"log"
-	"time"
 )
 
 var startBlockNum uint64
 
 func init() {
-	flag.Uint64Var(&startBlockNum, "startBlock", 0, "set start block number if needed")
+	flag.Uint64Var(&startBlockNum, "startBlock", 1, "set start block number if needed")
 	flag.Parse()
 }
 
@@ -71,16 +72,24 @@ func synchronize(ledgerClient *ledger.Client) {
 		if err != nil {
 			log.Fatalf("unmarshaling chaincodeAction Events to chaincodeEvent error: %s", err)
 		}
+		//chaincodePayload := &peer.ChaincodeEvent{}
+		//if err := json.Unmarshal(chaincodeEvent.Payload, chaincodePayload); err != nil {
+		//	log.Fatalf("unmarshaling chaincodeAction Events to chaincodeEvent error: %s", err)
+		//}
 		if chaincodeEvent.EventName == "" {
 			log.Println("event did not happen")
 		} else {
-			log.Printf("#################### Block event : %v ########### ", chaincodeEvent.EventName)
-			log.Printf("#################### Block info - block %v ########### ", chaincodeAction.String())
+			log.Printf("#################### Block event - %v ########### ", chaincodeEvent.EventName)
+			//log.Printf("#################### Block event - %v ########### ", chaincodePayload.GetPayload())
+			//log.Printf("#################### Block info - block %v ########### ", chaincodeAction.String())
 		}
 		startBlockNum++
 	}
 }
 
+/*
+
+ */
 func main() {
 	channelProvider, err := env.GetChannelProvider()
 	if err != nil {
