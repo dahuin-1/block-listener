@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"log"
 	"time"
@@ -72,24 +73,21 @@ func synchronize(ledgerClient *ledger.Client) {
 		if err != nil {
 			log.Fatalf("unmarshaling chaincodeAction Events to chaincodeEvent error: %s", err)
 		}
-		//chaincodePayload := &peer.ChaincodeEvent{}
-		//if err := json.Unmarshal(chaincodeEvent.Payload, chaincodePayload); err != nil {
-		//	log.Fatalf("unmarshaling chaincodeAction Events to chaincodeEvent error: %s", err)
-		//}
+		var chaincodePayload struct{}
+		if err := json.Unmarshal(chaincodeEvent.Payload, &chaincodePayload); err != nil {
+			log.Fatalf("unmarshaling chaincodeAction Events to chaincodeEvent error: %s", err)
+		}
 		if chaincodeEvent.EventName == "" {
 			log.Println("event did not happen")
 		} else {
 			log.Printf("#################### Block event - %v ########### ", chaincodeEvent.EventName)
-			//log.Printf("#################### Block event - %v ########### ", chaincodePayload.GetPayload())
+			log.Printf("#################### Block event - %v ########### ", chaincodePayload)
 			//log.Printf("#################### Block info - block %v ########### ", chaincodeAction.String())
 		}
 		startBlockNum++
 	}
 }
 
-/*
-
- */
 func main() {
 	channelProvider, err := env.GetChannelProvider()
 	if err != nil {
