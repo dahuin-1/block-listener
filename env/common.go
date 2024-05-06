@@ -1,13 +1,14 @@
 package env
 
 import (
+	"os"
+	"path/filepath"
+
 	mspclient "github.com/hyperledger/fabric-sdk-go/pkg/client/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	mspctx "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
-	"os"
-	"path/filepath"
 )
 
 type User struct {
@@ -17,8 +18,8 @@ type User struct {
 
 const (
 	channelID  = "kiesnet-dev"
-	configPath = "/Users/dhkim/Projects/cc-ping-listener/config/network.yaml"
-	credPath   = "/Users/dhkim/Projects/kiesnet-chaincode-dev-network/crypto-config/peerOrganizations/kiesnet.dev/users"
+	configPath = "/config/network.yaml"
+	credPath   = ""
 )
 
 func GetChannelProvider() (context.ChannelProvider, error) {

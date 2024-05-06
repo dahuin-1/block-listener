@@ -20,9 +20,9 @@ type User struct {
 }
 
 const (
-	channelID  = "kiesnet-dev"
-	configPath = "/Users/dhkim/Projects/cc-ping-listener/config/network.yaml"
-	credPath   = "/Users/dhkim/Projects/kiesnet-chaincode-dev-network/crypto-config/peerOrganizations/kiesnet.dev/users"
+	channelID  = "kiesnet-dev" 
+	configPath = "/config/network.yaml"
+	credPath   = ""
 )
 
 func getChannelProvider() (context.ChannelProvider, error) {
@@ -63,7 +63,7 @@ func parse(str string) string {
 }
 
 func setUser() (*User, error) {
-	mspPath := filepath.Join(credPath, "dhkim", "msp")
+	mspPath := filepath.Join(credPath, "username", "msp")
 	certPath := filepath.Join(mspPath, "signcerts", "cert.pem")
 	cert, err := os.ReadFile(certPath)
 	if err != nil {

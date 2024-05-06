@@ -28,11 +28,11 @@ organizations:
     peers:
       - test-peer
     users:
-      dhkim:
+      test-user:
         cert:
-          path: "/Users/dhkim/Projects/kiesnet-chaincode-dev-network/crypto-config/peerOrganizations/kiesnet.dev/users/dhkim/msp/signcerts/cert.pem"
+          path: "this/is/path"
         key:
-          path: "/Users/dhkim/Projects/kiesnet-chaincode-dev-network/crypto-config/peerOrganizations/kiesnet.dev/users/dhkim/msp/keystore/ecd808d04162d2f53441067459e98c5377adaecb1c61a2e4f878d15c31858a00_sk"
+          path: "this/is/path"
 orderers:
   test-orderer:
     url: localhost:7050
